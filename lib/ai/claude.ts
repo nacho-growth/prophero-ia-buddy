@@ -69,6 +69,12 @@ export async function callClaude(input: CallClaudeInput): Promise<Result<CallCla
       match_tenant_id: tenantId,
       match_count: 8,
     })
+    console.log('RPC DEBUG - full result:', JSON.stringify({
+      data: chunks,
+      error: chunksError,
+      embeddingLength: embedding.length,
+      tenantId: tenantId,
+    }))
     console.log('KNOWLEDGE DEBUG - raw rpc result:', JSON.stringify({
       dataLength: chunks?.length,
       firstItem: (chunks as any)?.[0],
