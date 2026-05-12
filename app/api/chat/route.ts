@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthContext } from '@/lib/supabase/auth-context'
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callClaude } from '@/lib/ai/claude'
 
@@ -16,6 +17,10 @@ export async function POST(request: NextRequest) {
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabaseServer = await createClient()
+    const { data: { session } } = await supabaseServer.auth.getSession()
+    const accessToken = session?.access_token ?? ''
 
     const body: unknown = await request.json().catch(() => null)
     const parsed = schema.safeParse(body)
@@ -55,6 +60,7 @@ export async function POST(request: NextRequest) {
       tenantId: auth.tenantId,
       conversationId,
       userMessage: message,
+      accessToken,
     })
 
     if (!result.ok) {

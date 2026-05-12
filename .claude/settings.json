@@ -4,7 +4,12 @@
       "Bash(npx tsc *)",
       "Skill(claude-api)",
       "Skill(claude-api:*)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(npm ls *)",
+      "Bash(node -e \"const p = require\\('pdfjs-dist'\\); console.log\\(Object.keys\\(p\\).slice\\(0, 10\\)\\)\")",
+      "Bash(node -e \"const p = require\\('pdfjs-dist/legacy/build/pdf.mjs'\\); console.log\\(Object.keys\\(p\\).slice\\(0, 10\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; p=json.load\\(sys.stdin\\); print\\(json.dumps\\({k: p[k] for k in ['main','exports','module'] if k in p}, indent=2\\)\\)\")",
+      "Bash(node -e \"const p = require\\('pdfjs-dist/legacy/build/pdf.mjs'\\); console.log\\(typeof p.getDocument\\)\")"
     ]
   }
 }
