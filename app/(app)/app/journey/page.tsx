@@ -118,7 +118,7 @@ export default async function JourneyPage() {
     : null
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl">
+    <div className="flex flex-col gap-6 max-w-6xl">
       <div className="flex flex-col gap-3">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Mi camino</h1>

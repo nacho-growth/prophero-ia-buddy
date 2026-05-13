@@ -100,7 +100,7 @@ export default async function HomePage() {
   if (status === 'completed') {
     const firstName = (profile.full_name as string).split(' ')[0]
     return (
-      <div className="flex flex-col gap-6 max-w-xl mx-auto text-center py-8">
+      <div className="flex flex-col gap-6 max-w-5xl mx-auto text-center py-8">
         <Trophy size={52} className="mx-auto" style={{ color: '#f59e0b' }} />
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
