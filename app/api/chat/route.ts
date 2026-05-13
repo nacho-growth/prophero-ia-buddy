@@ -19,8 +19,9 @@ export async function POST(request: NextRequest) {
     }
 
     const supabaseServer = await createClient()
-    const { data: { session } } = await supabaseServer.auth.getSession()
-    const accessToken = session?.access_token ?? ''
+    const { data: { user }, error: userError } = await supabaseServer.auth.getUser()
+    if (!user || userError) return new Response('Unauthorized', { status: 401 })
+    const accessToken = (await supabaseServer.auth.getSession()).data.session?.access_token ?? ''
 
     const body: unknown = await request.json().catch(() => null)
     const parsed = schema.safeParse(body)

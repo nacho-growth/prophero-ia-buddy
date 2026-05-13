@@ -114,6 +114,47 @@ body {
   border-radius: 6px;
 }
 
+/* ── Reading content (react-markdown) ───────────────── */
+.reading-content {
+  color: var(--text-muted);
+  line-height: 1.7;
+  font-size: 0.875rem;
+}
+.reading-content h2 {
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin-top: 1.4rem;
+  margin-bottom: 0.4rem;
+}
+.reading-content h3 {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.35rem;
+}
+.reading-content p {
+  margin-bottom: 0.7rem;
+}
+.reading-content strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.reading-content ul,
+.reading-content ol {
+  padding-left: 1.25rem;
+  margin-bottom: 0.7rem;
+}
+.reading-content li {
+  margin-bottom: 0.2rem;
+}
+.reading-content hr {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 1rem 0;
+}
+
 @keyframes slideIn {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }

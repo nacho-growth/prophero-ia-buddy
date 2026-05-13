@@ -6,13 +6,13 @@ import type { UserProfile } from '@/lib/supabase/types'
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
 
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) redirect('/login')
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const { data: profile } = await supabase
     .from('users')
     .select('id, full_name, email, avatar_url, role, tenant_id, team_id, job_title, hire_date, onboarding_status, tenants(name)')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single()
 
   if (!profile) redirect('/login')
@@ -20,7 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { count: unreadCount } = await supabase
     .from('notifications')
     .select('id', { count: 'exact', head: true })
-    .eq('user_id', session.user.id)
+    .eq('user_id', user.id)
     .eq('tenant_id', profile.tenant_id)
     .eq('is_read', false)
     .then((r) => ({ count: r.count ?? 0 }))
