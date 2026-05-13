@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Bell, X, Check } from 'lucide-react'
 import { SkeletonRow } from './Skeleton'
@@ -84,7 +85,7 @@ function NotifItem({
     return (
       <Link
         href={notif.deep_link}
-        onClick={() => { onMarkRead(notif.id); onClose() }}
+        onClick={() => { void onMarkRead(notif.id); onClose() }}
         className="w-full text-left px-4 py-3 flex gap-3 transition-colors block"
         style={sharedStyle}
       >
@@ -111,6 +112,7 @@ interface NotificationPanelProps {
 }
 
 export default function NotificationPanel({ userId, tenantId, onClose }: NotificationPanelProps) {
+  const router = useRouter()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
@@ -129,11 +131,13 @@ export default function NotificationPanel({ userId, tenantId, onClose }: Notific
       body: JSON.stringify({ userId, tenantId }),
     })
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+    router.refresh()
   }
 
   async function markRead(id: string) {
     await fetch(`/api/notifications/${id}/read`, { method: 'POST' })
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n))
+    router.refresh()
   }
 
   const visible = filter === 'unread' ? notifications.filter((n) => !n.is_read) : notifications
