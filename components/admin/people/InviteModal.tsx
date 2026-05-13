@@ -9,10 +9,11 @@ interface Props {
   teams: Team[]
   onClose: () => void
   onSuccess: (email: string) => void
+  initialEmail?: string
 }
 
-export default function InviteModal({ teams, onClose, onSuccess }: Props) {
-  const [email, setEmail] = useState('')
+export default function InviteModal({ teams, onClose, onSuccess, initialEmail }: Props) {
+  const [email, setEmail] = useState(initialEmail ?? '')
   const [fullName, setFullName] = useState('')
   const [teamId, setTeamId] = useState(teams[0]?.id ?? '')
   const [role, setRole] = useState('employee')
@@ -37,7 +38,7 @@ export default function InviteModal({ teams, onClose, onSuccess }: Props) {
       const res = await fetch('/api/admin/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, fullName, teamId, role, jobTitle: jobTitle || undefined }),
+        body: JSON.stringify({ email, fullName, teamId, role, jobTitle: jobTitle || undefined, requestEmail: initialEmail || undefined }),
       })
       const data = await res.json() as { error?: string }
       if (!res.ok) {

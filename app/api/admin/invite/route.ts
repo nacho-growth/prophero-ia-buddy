@@ -9,6 +9,7 @@ const schema = z.object({
   teamId: z.string().min(1),
   role: z.enum(['employee', 'manager', 'hr_admin', 'tenant_admin']),
   jobTitle: z.string().max(100).optional(),
+  requestEmail: z.string().email().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -106,6 +107,14 @@ export async function POST(request: NextRequest) {
         .update({ onboarding_status: 'in_progress' })
         .eq('id', authUser.user.id)
     }
+  }
+
+  if (parsed.data.requestEmail) {
+    await admin
+      .from('access_requests')
+      .update({ status: 'invited', updated_at: new Date().toISOString() })
+      .eq('email', parsed.data.requestEmail)
+      .eq('status', 'pending')
   }
 
   console.log('INVITE SUCCESS - user:', authUser.user.id, 'team:', (team as { name: string }).name, 'track:', (track as { name: string } | null)?.name ?? 'none')

@@ -39,7 +39,7 @@ export default async function PeoplePage({
     employeesQuery = employeesQuery.eq('team_id', teamFilter)
   }
 
-  const [employeesResult, progressResult, teamsResult] = await Promise.all([
+  const [employeesResult, progressResult, teamsResult, accessRequestsResult] = await Promise.all([
     employeesQuery.order('full_name'),
     admin
       .from('user_onboarding_progress')
@@ -51,6 +51,11 @@ export default async function PeoplePage({
       .eq('tenant_id', tenantId)
       .is('deleted_at', null)
       .order('name'),
+    admin
+      .from('access_requests')
+      .select('id, email, message, created_at')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false }),
   ])
 
   const progressByUser: Record<string, { total: number; completed: number }> = {}
@@ -63,6 +68,7 @@ export default async function PeoplePage({
 
   const employees = (employeesResult.data ?? []) as unknown as Employee[]
   const teams = (teamsResult.data ?? []) as { id: string; name: string }[]
+  const accessRequests = (accessRequestsResult.data ?? []) as { id: string; email: string; message: string | null; created_at: string }[]
 
   return (
     <PeoplePageClient
@@ -70,6 +76,7 @@ export default async function PeoplePage({
       teams={teams}
       progressByUser={progressByUser}
       teamFilter={teamFilter}
+      accessRequests={accessRequests}
     />
   )
 }

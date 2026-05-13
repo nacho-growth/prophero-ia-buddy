@@ -3,8 +3,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Users, UserPlus } from 'lucide-react'
+import { Users, UserPlus, ChevronUp, ChevronDown } from 'lucide-react'
 import InviteModal from './InviteModal'
+
+interface AccessRequest {
+  id: string
+  email: string
+  message: string | null
+  created_at: string
+}
 
 export type Employee = {
   id: string
@@ -29,6 +36,7 @@ interface Props {
   teams: { id: string; name: string }[]
   progressByUser: Record<string, { total: number; completed: number }>
   teamFilter: string | undefined
+  accessRequests: AccessRequest[]
 }
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
@@ -72,15 +80,27 @@ function formatRelativeDate(date: string | null): string {
   return new Date(date).toLocaleDateString('es', { day: 'numeric', month: 'short' })
 }
 
-export default function PeoplePageClient({ employees, teams, progressByUser, teamFilter }: Props) {
+export default function PeoplePageClient({ employees, teams, progressByUser, teamFilter, accessRequests }: Props) {
   const router = useRouter()
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [invitePrefilledEmail, setInvitePrefilledEmail] = useState<string | undefined>()
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [requestsExpanded, setRequestsExpanded] = useState(true)
 
   function handleInviteSuccess(email: string) {
     router.refresh()
     setSuccessMsg(`Invitación enviada a ${email}`)
     setTimeout(() => setSuccessMsg(null), 5000)
+  }
+
+  function openInviteForRequest(email: string) {
+    setInvitePrefilledEmail(email)
+    setShowInviteModal(true)
+  }
+
+  function openInviteBlank() {
+    setInvitePrefilledEmail(undefined)
+    setShowInviteModal(true)
   }
 
   return (
@@ -97,7 +117,7 @@ export default function PeoplePageClient({ employees, teams, progressByUser, tea
           </span>
         </div>
         <button
-          onClick={() => setShowInviteModal(true)}
+          onClick={openInviteBlank}
           className="cursor-pointer flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl hover:opacity-80 transition-opacity"
           style={{ background: 'var(--accent)', color: '#fff' }}
         >
@@ -113,6 +133,67 @@ export default function PeoplePageClient({ employees, teams, progressByUser, tea
           style={{ background: 'rgba(34,197,94,0.12)', color: '#15803d', border: '1px solid rgba(34,197,94,0.3)' }}
         >
           {successMsg}
+        </div>
+      )}
+
+      {/* Access requests */}
+      {accessRequests.length > 0 && (
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{ background: 'var(--bg-surface)', border: '1px solid rgba(251,191,36,0.3)' }}
+        >
+          <button
+            onClick={() => setRequestsExpanded(prev => !prev)}
+            className="cursor-pointer w-full flex items-center gap-3 px-4 py-3"
+            style={{ borderBottom: requestsExpanded ? '1px solid var(--border-subtle)' : 'none' }}
+          >
+            <span
+              className="flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold flex-shrink-0"
+              style={{ background: 'rgba(251,191,36,0.2)', color: '#d97706' }}
+            >
+              {accessRequests.length}
+            </span>
+            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              Solicitudes de acceso pendientes
+            </span>
+            <span className="ml-auto" style={{ color: 'var(--text-muted)' }}>
+              {requestsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </span>
+          </button>
+
+          {requestsExpanded && (
+            <div className="flex flex-col">
+              {accessRequests.map((req, i) => (
+                <div
+                  key={req.id}
+                  className="flex items-center gap-4 px-4 py-3"
+                  style={{ borderTop: i === 0 ? undefined : '1px solid var(--border-subtle)' }}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      {req.email}
+                    </p>
+                    {req.message && (
+                      <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'var(--text-muted)' }}>
+                        {req.message}
+                      </p>
+                    )}
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      {formatRelativeDate(req.created_at)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => openInviteForRequest(req.email)}
+                    className="cursor-pointer flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity flex-shrink-0"
+                    style={{ background: 'var(--accent)', color: '#fff' }}
+                  >
+                    <UserPlus size={12} />
+                    Invitar
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -254,7 +335,8 @@ export default function PeoplePageClient({ employees, teams, progressByUser, tea
       {showInviteModal && (
         <InviteModal
           teams={teams}
-          onClose={() => setShowInviteModal(false)}
+          initialEmail={invitePrefilledEmail}
+          onClose={() => { setShowInviteModal(false); setInvitePrefilledEmail(undefined) }}
           onSuccess={handleInviteSuccess}
         />
       )}
