@@ -148,13 +148,14 @@ export async function callClaude(input: CallClaudeInput): Promise<Result<CallCla
   }
 
   // Step 7: Save assistant message
-  await admin.from('messages').insert({
+  const { error: assistantMsgError } = await admin.from('messages').insert({
     conversation_id: conversationId,
     tenant_id: tenantId,
     user_id: userId,
     role: 'assistant',
     content: assistantContent,
   })
+  if (assistantMsgError) console.error('=== ASSISTANT MSG INSERT ERROR ===', JSON.stringify(assistantMsgError))
 
   // Step 8: Knowledge gap detection
   const gapPhrases = [

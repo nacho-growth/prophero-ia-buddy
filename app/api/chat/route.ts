@@ -47,13 +47,14 @@ export async function POST(request: NextRequest) {
       conversationId = (conv as { id: string }).id
     }
 
-    await admin.from('messages').insert({
+    const { error: msgError } = await admin.from('messages').insert({
       conversation_id: conversationId,
       tenant_id: auth.tenantId,
       user_id: auth.userId,
       role: 'user',
       content: message,
     })
+    if (msgError) console.error('=== MSG INSERT ERROR ===', JSON.stringify(msgError))
 
     const result = await callClaude({
       userId: auth.userId,
