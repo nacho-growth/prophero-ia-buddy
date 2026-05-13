@@ -47,7 +47,7 @@ export default function Header({ user, unreadCount, world, onNotifOpen }: Header
             className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold"
             style={{ backgroundColor: 'var(--accent-dim)', color: 'var(--accent)' }}
           >
-            Admin
+            {({ manager: 'Manager', hr_admin: 'HR Admin', tenant_admin: 'Admin', super_admin: 'Super Admin' } as Record<string, string>)[user.role] ?? 'Admin'}
           </span>
         )}
       </div>
