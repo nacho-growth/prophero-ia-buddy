@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { completeStep } from '@/app/actions/onboarding'
 import JourneyPhase, { type PhaseData } from '@/components/journey/JourneyPhase'
 import type { StepData } from '@/components/journey/JourneyStep'
+import ScrollToStep from '@/components/journey/ScrollToStep'
 
 type RawStep = {
   id: string
@@ -148,6 +149,7 @@ export default async function JourneyPage() {
           />
         ))}
       </div>
+      <ScrollToStep />
     </div>
   )
 }

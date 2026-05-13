@@ -66,7 +66,7 @@ export default function Header({ user, unreadCount, world, onNotifOpen }: Header
 
         <button
           onClick={onNotifOpen}
-          className="relative flex items-center justify-center rounded-lg transition-colors"
+          className="cursor-pointer relative flex items-center justify-center rounded-lg transition-colors"
           style={{ width: 36, height: 36, color: 'var(--text-secondary)' }}
         >
           <Bell className="w-4 h-4" />
@@ -78,7 +78,7 @@ export default function Header({ user, unreadCount, world, onNotifOpen }: Header
         <div className="relative">
           <button
             onClick={() => setDropdownOpen((v) => !v)}
-            className="flex items-center gap-2 rounded-lg px-2 py-1 transition-colors"
+            className="cursor-pointer flex items-center gap-2 rounded-lg px-2 py-1 transition-colors"
             style={{ color: 'var(--text-secondary)' }}
           >
             <div
@@ -124,7 +124,7 @@ export default function Header({ user, unreadCount, world, onNotifOpen }: Header
                 <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 4 }} />
                 <button
                   onClick={handleSignOut}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-overlay)]"
+                  className="cursor-pointer flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-overlay)]"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   <LogOut className="w-4 h-4" />

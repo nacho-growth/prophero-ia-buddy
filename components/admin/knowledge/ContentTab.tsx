@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Loader2, CheckCircle2, Clock, RefreshCw, Eye, ChevronDown, ChevronRight,
-  BookOpen, CheckSquare, PlayCircle, Users, Brain, Key, Pencil,
+  BookOpen, CheckSquare, PlayCircle, Users, Brain, Key, Pencil, Bell, Send, Check,
 } from 'lucide-react'
 
 interface StepContent {
@@ -19,6 +19,11 @@ export interface StepWithContent {
   type: string
   step_order: number
   content: StepContent | null
+}
+
+interface Team {
+  id: string
+  name: string
 }
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -47,7 +52,7 @@ function getEffectiveStatus(
   return 'none'
 }
 
-export default function ContentTab({ steps }: { steps: StepWithContent[] }) {
+export default function ContentTab({ steps, teams }: { steps: StepWithContent[]; teams: Team[] }) {
   const router = useRouter()
   const [loadingMap, setLoadingMap] = useState<Record<string, LoadingState>>({})
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -55,6 +60,11 @@ export default function ContentTab({ steps }: { steps: StepWithContent[] }) {
   const [localContents, setLocalContents] = useState<Record<string, string>>({})
   const [editedContents, setEditedContents] = useState<Record<string, string>>({})
   const [confirmRegenId, setConfirmRegenId] = useState<string | null>(null)
+  const [notifyStepId, setNotifyStepId] = useState<string | null>(null)
+  const [notifyMessage, setNotifyMessage] = useState('')
+  const [notifyAudiences, setNotifyAudiences] = useState<Set<string>>(new Set(['all']))
+  const [sendingNotif, setSendingNotif] = useState(false)
+  const [notifSent, setNotifSent] = useState<Record<string, boolean>>({})
 
   function getContent(step: StepWithContent): string | null {
     return localContents[step.id] ?? step.content?.generated_reading ?? null
@@ -115,9 +125,53 @@ export default function ContentTab({ steps }: { steps: StepWithContent[] }) {
       })
       setLocalStatuses(prev => ({ ...prev, [stepId]: 'published' }))
       setExpandedId(null)
+      setNotifyStepId(stepId)
+      setNotifyMessage('')
+      setNotifyAudiences(new Set(['all']))
       router.refresh()
     } finally {
       setLoadingMap(prev => ({ ...prev, [stepId]: null }))
+    }
+  }
+
+  function toggleAudience(value: string) {
+    setNotifyAudiences(prev => {
+      const next = new Set(prev)
+      if (value === 'all') return new Set(['all'])
+      next.delete('all')
+      if (next.has(value)) {
+        next.delete(value)
+        if (next.size === 0) return new Set(['all'])
+      } else {
+        next.add(value)
+      }
+      return next
+    })
+  }
+
+  async function handleSendNotification(stepId: string) {
+    if (!notifyMessage.trim()) return
+    setSendingNotif(true)
+    try {
+      if (notifyAudiences.has('all')) {
+        await fetch('/api/admin/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stepId, message: notifyMessage, audience: 'all' }),
+        })
+      } else {
+        await Promise.all([...notifyAudiences].map(teamId =>
+          fetch('/api/admin/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stepId, message: notifyMessage, audience: 'team', teamId }),
+          })
+        ))
+      }
+      setNotifSent(prev => ({ ...prev, [stepId]: true }))
+      setNotifyStepId(null)
+    } finally {
+      setSendingNotif(false)
     }
   }
 
@@ -223,7 +277,7 @@ export default function ContentTab({ steps }: { steps: StepWithContent[] }) {
                     <button
                       type="button"
                       onClick={() => handleGenerate(step)}
-                      className="text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
+                      className="cursor-pointer text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
                       style={{ background: 'var(--accent)', color: '#fff' }}
                     >
                       Generar
@@ -232,7 +286,7 @@ export default function ContentTab({ steps }: { steps: StepWithContent[] }) {
                     <button
                       type="button"
                       onClick={() => handleExpandDraft(step)}
-                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
+                      className="cursor-pointer flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
                       style={{ background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid rgba(45,91,227,0.3)' }}
                     >
                       <Eye size={12} />
@@ -245,7 +299,7 @@ export default function ContentTab({ steps }: { steps: StepWithContent[] }) {
                     <button
                       type="button"
                       onClick={() => handleExpandDraft(step)}
-                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
+                      className="cursor-pointer flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
                       style={{ background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid rgba(45,91,227,0.3)' }}
                     >
                       <Pencil size={12} />
@@ -257,7 +311,7 @@ export default function ContentTab({ steps }: { steps: StepWithContent[] }) {
                         <button
                           type="button"
                           onClick={() => handleRegenerate(step)}
-                          className="text-xs font-medium px-2 py-1 rounded-lg"
+                          className="cursor-pointer text-xs font-medium px-2 py-1 rounded-lg"
                           style={{ background: '#fef2f2', color: '#ef4444' }}
                         >
                           Confirmar
@@ -265,7 +319,7 @@ export default function ContentTab({ steps }: { steps: StepWithContent[] }) {
                         <button
                           type="button"
                           onClick={() => setConfirmRegenId(null)}
-                          className="text-xs px-2 py-1 rounded-lg"
+                          className="cursor-pointer text-xs px-2 py-1 rounded-lg"
                           style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
                         >
                           Cancelar
@@ -275,7 +329,7 @@ export default function ContentTab({ steps }: { steps: StepWithContent[] }) {
                       <button
                         type="button"
                         onClick={() => setConfirmRegenId(step.id)}
-                        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
+                        className="cursor-pointer flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
                         style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}
                       >
                         <RefreshCw size={12} />
@@ -288,6 +342,93 @@ export default function ContentTab({ steps }: { steps: StepWithContent[] }) {
                 </div>
               )}
             </div>
+
+            {/* Notification panel — shown after publish */}
+            {notifyStepId === step.id && !notifSent[step.id] && (
+              <div
+                className="flex flex-col gap-3 px-4 pb-4 pt-4"
+                style={{ borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}
+              >
+                <div className="flex items-center gap-2">
+                  <Bell size={15} style={{ color: 'var(--accent)' }} />
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    ¿Notificar al equipo sobre este cambio?
+                  </p>
+                </div>
+                <textarea
+                  value={notifyMessage}
+                  onChange={e => setNotifyMessage(e.target.value)}
+                  placeholder="Ej: Actualizamos el proceso de arras — nuevo porcentaje de señal"
+                  rows={2}
+                  className="w-full rounded-lg px-3 py-2 text-sm resize-none focus:outline-none"
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-subtle)',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+                <div className="flex flex-wrap items-center gap-4">
+                  <div
+                    className="flex items-center gap-2 cursor-pointer text-sm select-none"
+                    style={{ color: 'var(--text-secondary)' }}
+                    onClick={() => toggleAudience('all')}
+                  >
+                    <button
+                      type="button"
+                      className="flex items-center justify-center rounded w-4 h-4 flex-shrink-0 transition-colors cursor-pointer"
+                      style={{
+                        background: notifyAudiences.has('all') ? 'var(--accent)' : 'transparent',
+                        border: `2px solid ${notifyAudiences.has('all') ? 'var(--accent)' : 'var(--border-strong)'}`,
+                      }}
+                    >
+                      {notifyAudiences.has('all') && <Check size={10} style={{ color: '#fff' }} />}
+                    </button>
+                    Todos los empleados
+                  </div>
+                  {teams.map(team => (
+                    <div
+                      key={team.id}
+                      className="flex items-center gap-2 cursor-pointer text-sm select-none"
+                      style={{ color: 'var(--text-secondary)' }}
+                      onClick={() => toggleAudience(team.id)}
+                    >
+                      <button
+                        type="button"
+                        className="flex items-center justify-center rounded w-4 h-4 flex-shrink-0 transition-colors cursor-pointer"
+                        style={{
+                          background: notifyAudiences.has(team.id) ? 'var(--accent)' : 'transparent',
+                          border: `2px solid ${notifyAudiences.has(team.id) ? 'var(--accent)' : 'var(--border-strong)'}`,
+                        }}
+                      >
+                        {notifyAudiences.has(team.id) && <Check size={10} style={{ color: '#fff' }} />}
+                      </button>
+                      {team.name}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSendNotification(step.id)}
+                    disabled={!notifyMessage.trim() || sendingNotif}
+                    className="cursor-pointer flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl disabled:opacity-40 hover:opacity-80 transition-opacity"
+                    style={{ background: 'var(--accent)', color: '#fff' }}
+                  >
+                    {sendingNotif
+                      ? <><Loader2 size={13} className="animate-spin" /> Enviando...</>
+                      : <><Send size={13} /> Enviar notificación</>}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNotifyStepId(null)}
+                    className="cursor-pointer text-sm px-3 py-2 rounded-xl hover:opacity-80 transition-opacity"
+                    style={{ background: 'var(--bg-surface)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}
+                  >
+                    Omitir
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Expanded review panel */}
             {isExpanded && !isStructured && (
@@ -318,7 +459,7 @@ export default function ContentTab({ steps }: { steps: StepWithContent[] }) {
                         type="button"
                         onClick={() => handlePublish(step.id, getEditableContent(step))}
                         disabled={!!loading}
-                        className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl hover:opacity-80 disabled:opacity-40 transition-opacity"
+                        className="cursor-pointer flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl hover:opacity-80 disabled:opacity-40 transition-opacity"
                         style={{ background: '#22c55e', color: '#fff' }}
                       >
                         {loading === 'publishing'
@@ -331,7 +472,7 @@ export default function ContentTab({ steps }: { steps: StepWithContent[] }) {
                         type="button"
                         onClick={() => setConfirmRegenId(step.id)}
                         disabled={!!loading}
-                        className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl hover:opacity-80 disabled:opacity-40 transition-opacity"
+                        className="cursor-pointer flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl hover:opacity-80 disabled:opacity-40 transition-opacity"
                         style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}
                       >
                         <RefreshCw size={14} />

@@ -53,7 +53,7 @@ export default async function KnowledgePage({
 
   const admin = createAdminClient()
 
-  const [stepsResult, documentsResult, gapsResult] = await Promise.all([
+  const [stepsResult, documentsResult, gapsResult, teamsResult] = await Promise.all([
     admin
       .from('onboarding_steps')
       .select('id, title, type, step_order, content')
@@ -72,11 +72,19 @@ export default async function KnowledgePage({
       .select('id, question, frequency, status, created_at, team_id')
       .eq('tenant_id', tenantId)
       .order('frequency', { ascending: false }),
+
+    admin
+      .from('teams')
+      .select('id, name')
+      .eq('tenant_id', tenantId)
+      .is('deleted_at', null)
+      .order('name'),
   ])
 
   const steps = (stepsResult.data ?? []) as unknown as StepWithContent[]
   const documents = (documentsResult.data ?? []) as unknown as Document[]
   const gaps = (gapsResult.data ?? []) as unknown as Gap[]
+  const teams = (teamsResult.data ?? []) as { id: string; name: string }[]
 
   const openGaps = gaps.filter(g => g.status === 'open' || g.status === 'in_progress').length
 
@@ -131,7 +139,7 @@ export default async function KnowledgePage({
       </div>
 
       {/* Tab content */}
-      {tab === 'content'   && <ContentTab   steps={steps} />}
+      {tab === 'content'   && <ContentTab   steps={steps} teams={teams} />}
       {tab === 'documents' && <DocumentsTab documents={documents} />}
       {tab === 'gaps'      && <GapsTab      gaps={gaps} />}
     </div>

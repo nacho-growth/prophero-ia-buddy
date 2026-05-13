@@ -39,14 +39,14 @@ export default function JourneyStep({ step, isActionable, boundCompleteAction }:
   const isCompleted = step.status === 'completed'
 
   return (
-    <div>
+    <div id={`step-${step.id}`}>
       <div
         className="flex items-center gap-3 py-2.5"
         style={{
           borderTop: '1px solid var(--border-subtle)',
-          cursor: isCompleted ? 'default' : 'pointer',
+          cursor: 'pointer',
         }}
-        onClick={() => { if (!isCompleted) setExpanded(e => !e) }}
+        onClick={() => setExpanded(e => !e)}
       >
         <span
           style={{
@@ -83,14 +83,12 @@ export default function JourneyStep({ step, isActionable, boundCompleteAction }:
           )}
         </div>
 
-        {!isCompleted && (
-          <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>
-            {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </span>
-        )}
+        <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>
+          {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </span>
       </div>
 
-      {expanded && !isCompleted && (
+      {expanded && (
         <StepDetail
           progressId={step.progressId}
           stepId={step.id}

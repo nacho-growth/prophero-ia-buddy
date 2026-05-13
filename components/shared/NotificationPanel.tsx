@@ -14,6 +14,7 @@ interface Notification {
   body: string
   created_at: string
   is_read: boolean
+  deep_link?: string | null
 }
 
 const TYPE_COLOR: Record<NotifType, string> = {
@@ -31,6 +32,76 @@ function timeAgo(dateStr: string): string {
   const hours = Math.floor(mins / 60)
   if (hours < 24) return `${hours}h`
   return `${Math.floor(hours / 24)}d`
+}
+
+function NotifItem({
+  notif,
+  onMarkRead,
+  onClose,
+}: {
+  notif: Notification
+  onMarkRead: (id: string) => void
+  onClose: () => void
+}) {
+  const sharedStyle = {
+    borderLeft: notif.is_read ? '3px solid transparent' : '3px solid var(--accent)',
+    backgroundColor: notif.is_read ? 'transparent' : 'var(--bg-elevated)',
+  }
+
+  const inner = (
+    <>
+      <div
+        className="flex-shrink-0 flex items-center justify-center rounded-lg mt-0.5"
+        style={{ width: 32, height: 32, backgroundColor: `${TYPE_COLOR[notif.type]}20` }}
+      >
+        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: TYPE_COLOR[notif.type] }} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <p
+            className="text-sm leading-snug"
+            style={{ color: 'var(--text-primary)', fontWeight: notif.is_read ? 400 : 600 }}
+          >
+            {notif.title}
+          </p>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {!notif.is_read && (
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
+            )}
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              {timeAgo(notif.created_at)}
+            </span>
+          </div>
+        </div>
+        <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
+          {notif.body}
+        </p>
+      </div>
+    </>
+  )
+
+  if (notif.deep_link) {
+    return (
+      <Link
+        href={notif.deep_link}
+        onClick={() => { onMarkRead(notif.id); onClose() }}
+        className="w-full text-left px-4 py-3 flex gap-3 transition-colors block"
+        style={sharedStyle}
+      >
+        {inner}
+      </Link>
+    )
+  }
+
+  return (
+    <button
+      onClick={() => onMarkRead(notif.id)}
+      className="cursor-pointer w-full text-left px-4 py-3 flex gap-3 transition-colors"
+      style={sharedStyle}
+    >
+      {inner}
+    </button>
+  )
 }
 
 interface NotificationPanelProps {
@@ -155,43 +226,12 @@ export default function NotificationPanel({ userId, tenantId, onClose }: Notific
             </div>
           ) : (
             visible.map((notif) => (
-              <button
+              <NotifItem
                 key={notif.id}
-                onClick={() => markRead(notif.id)}
-                className="w-full text-left px-4 py-3 flex gap-3 transition-colors"
-                style={{
-                  borderLeft: notif.is_read ? '3px solid transparent' : '3px solid var(--accent)',
-                  backgroundColor: notif.is_read ? 'transparent' : 'var(--bg-elevated)',
-                }}
-              >
-                <div
-                  className="flex-shrink-0 flex items-center justify-center rounded-lg mt-0.5"
-                  style={{ width: 32, height: 32, backgroundColor: `${TYPE_COLOR[notif.type]}20` }}
-                >
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: TYPE_COLOR[notif.type] }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p
-                      className="text-sm leading-snug"
-                      style={{ color: 'var(--text-primary)', fontWeight: notif.is_read ? 400 : 600 }}
-                    >
-                      {notif.title}
-                    </p>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {!notif.is_read && (
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
-                      )}
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        {timeAgo(notif.created_at)}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                    {notif.body}
-                  </p>
-                </div>
-              </button>
+                notif={notif}
+                onMarkRead={markRead}
+                onClose={onClose}
+              />
             ))
           )}
         </div>

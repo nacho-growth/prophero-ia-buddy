@@ -41,6 +41,20 @@ interface AssessmentResults {
 
 type AssessmentState = 'idle' | 'loading_questions' | 'answering' | 'evaluating' | 'results'
 
+// ── Completed badge ───────────────────────────────────────────────────────────
+
+function CompletedBadge() {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl"
+      style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e' }}
+    >
+      <CheckCircle2 size={14} />
+      Completado
+    </span>
+  )
+}
+
 // ── Shared CompleteButton ─────────────────────────────────────────────────────
 
 function CompleteButton({ onComplete, disabled }: { onComplete: (() => Promise<void>) | null; disabled?: boolean }) {
@@ -173,7 +187,7 @@ function ReadingDetail({ stepId, stepTitle, stepDescription, onComplete }: {
           <MessageCircle size={15} />
           Preguntarle a Buddy sobre esto
         </Link>
-        <CompleteButton onComplete={onComplete} />
+        {onComplete ? <CompleteButton onComplete={onComplete} /> : <CompletedBadge />}
       </div>
     </div>
   )
@@ -188,8 +202,10 @@ function AccessRequestDetail({ stepContent, onComplete }: {
   const checklist = (stepContent as { checklist?: string[] } | null)?.checklist ?? []
   const [checked, setChecked] = useState<boolean[]>(new Array(checklist.length).fill(false))
   const allChecked = checklist.length > 0 && checked.every(Boolean)
+  const isCompleted = !onComplete
 
   function toggle(i: number) {
+    if (isCompleted) return
     setChecked(prev => prev.map((v, idx) => idx === i ? !v : v))
   }
 
@@ -203,16 +219,16 @@ function AccessRequestDetail({ stepContent, onComplete }: {
                 type="button"
                 onClick={() => toggle(i)}
                 className="mt-0.5 shrink-0 transition-colors"
-                style={{ color: checked[i] ? '#22c55e' : 'var(--text-muted)' }}
+                style={{ color: isCompleted || checked[i] ? '#22c55e' : 'var(--text-muted)', cursor: isCompleted ? 'default' : 'pointer' }}
               >
-                <CheckSquare size={17} style={{ opacity: checked[i] ? 1 : 0.35 }} />
+                <CheckSquare size={17} style={{ opacity: isCompleted || checked[i] ? 1 : 0.35 }} />
               </button>
               <span
                 className="text-sm"
                 style={{
                   color: 'var(--text-primary)',
-                  textDecoration: checked[i] ? 'line-through' : undefined,
-                  opacity: checked[i] ? 0.5 : 1,
+                  textDecoration: isCompleted || checked[i] ? 'line-through' : undefined,
+                  opacity: isCompleted || checked[i] ? 0.5 : 1,
                 }}
               >
                 {item}
@@ -223,7 +239,7 @@ function AccessRequestDetail({ stepContent, onComplete }: {
       ) : (
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Sin checklist definido para este paso.</p>
       )}
-      <CompleteButton onComplete={onComplete} disabled={!allChecked} />
+      {isCompleted ? <CompletedBadge /> : <CompleteButton onComplete={onComplete} disabled={!allChecked} />}
     </div>
   )
 }
@@ -237,6 +253,7 @@ function MeetingDetail({ stepContent, stepDescription, onComplete }: {
 }) {
   const agenda = (stepContent as { agenda?: string[] } | null)?.agenda ?? []
   const [confirmed, setConfirmed] = useState(false)
+  const isCompleted = !onComplete
 
   return (
     <div className="flex flex-col gap-4">
@@ -258,18 +275,24 @@ function MeetingDetail({ stepContent, stepDescription, onComplete }: {
           </ul>
         </div>
       )}
-      <label className="flex items-center gap-3 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={confirmed}
-          onChange={e => setConfirmed(e.target.checked)}
-          className="w-4 h-4"
-        />
-        <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-          Confirmo que realicé esta reunión con mi manager
-        </span>
-      </label>
-      <CompleteButton onComplete={onComplete} disabled={!confirmed} />
+      {isCompleted ? (
+        <CompletedBadge />
+      ) : (
+        <>
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={e => setConfirmed(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+              Confirmo que realicé esta reunión con mi manager
+            </span>
+          </label>
+          <CompleteButton onComplete={onComplete} disabled={!confirmed} />
+        </>
+      )}
     </div>
   )
 }
@@ -344,6 +367,16 @@ function AssessmentDetail({ stepId, stepTitle, stepContent, onComplete }: {
 
   // idle
   if (assessState === 'idle') {
+    if (!onComplete) {
+      return (
+        <div className="flex flex-col gap-3">
+          <CompletedBadge />
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            Ya completaste esta evaluación.
+          </p>
+        </div>
+      )
+    }
     return (
       <div className="flex flex-col gap-3">
         {error && (
