@@ -8,6 +8,7 @@ import { callClaude } from '@/lib/ai/claude'
 const schema = z.object({
   conversationId: z.string().uuid().optional(),
   message: z.string().min(1).max(4000),
+  title: z.string().max(100).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -29,12 +30,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
 
-    const { message } = parsed.data
+    const { message, title: bodyTitle } = parsed.data
     let { conversationId } = parsed.data
     const admin = createAdminClient()
 
     if (!conversationId) {
-      const title = message.length > 60 ? message.slice(0, 60) + '…' : message
+      const title = bodyTitle ?? (message.length > 60 ? message.slice(0, 60) + '…' : message)
       const { data: conv, error } = await admin
         .from('conversations')
         .insert({ tenant_id: auth.tenantId, user_id: auth.userId, title })

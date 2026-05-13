@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Send, Plus, MessageSquare, Loader2 } from 'lucide-react'
 
 interface Conversation {
@@ -17,7 +18,10 @@ interface Message {
   created_at: string
 }
 
-export default function ChatPage() {
+function ChatPage() {
+  const searchParams = useSearchParams()
+  const contextParam = searchParams.get('context')
+
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConvId, setActiveConvId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -36,13 +40,71 @@ export default function ChatPage() {
   }, [messages, scrollToBottom])
 
   useEffect(() => {
-    fetch('/api/chat/conversations')
+    const controller = new AbortController()
+
+    fetch('/api/chat/conversations', { signal: controller.signal })
       .then(r => r.json())
       .then(d => {
-        if (d.conversations) setConversations(d.conversations)
+        if (controller.signal.aborted) return
+        const convs: Conversation[] = d.conversations ?? []
+        setConversations(convs)
+
+        if (!contextParam) return
+
+        const existingConv = convs.find(c => c.title === `Consulta: ${contextParam}`)
+        if (existingConv) {
+          loadConversation(existingConv.id)
+          return
+        }
+
+        const autoMessage = `Estoy estudiando el tema "${contextParam}" en mi onboarding. ¿Podés explicarme los conceptos clave de este tema y responder dudas que tenga?`
+        setSending(true)
+        const optimistic: Message = {
+          id: `tmp-${Date.now()}`,
+          role: 'user',
+          content: autoMessage,
+          created_at: new Date().toISOString(),
+        }
+        setMessages([optimistic])
+
+        fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: autoMessage, title: `Consulta: ${contextParam}` }),
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (!data.content) return
+            const assistantMsg: Message = {
+              id: `tmp-a-${Date.now()}`,
+              role: 'assistant',
+              content: data.content,
+              created_at: new Date().toISOString(),
+            }
+            setMessages(prev => [...prev, assistantMsg])
+            if (data.conversationId) {
+              setActiveConvId(data.conversationId)
+              const newConv: Conversation = {
+                id: data.conversationId,
+                title: `Consulta: ${contextParam}`,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              }
+              setConversations(prev => {
+                if (prev.some(c => c.id === data.conversationId)) return prev
+                return [newConv, ...prev]
+              })
+            }
+          })
+          .catch(() => setMessages([]))
+          .finally(() => setSending(false))
       })
-      .catch(() => {})
-  }, [])
+      .catch(e => {
+        if (e.name === 'AbortError') return
+      })
+
+    return () => controller.abort()
+  }, [contextParam])
 
   function loadConversation(convId: string) {
     if (convId === activeConvId) return
@@ -109,7 +171,10 @@ export default function ChatPage() {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }
-        setConversations(prev => [newConv, ...prev])
+        setConversations(prev => {
+          if (prev.some(c => c.id === data.conversationId)) return prev
+          return [newConv, ...prev]
+        })
       }
     } catch {
       setMessages(prev => prev.filter(m => m.id !== optimistic.id))
@@ -254,6 +319,14 @@ export default function ChatPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ChatPageWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <ChatPage />
+    </Suspense>
   )
 }
 
