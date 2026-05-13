@@ -10,19 +10,23 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const supabase = createClient()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        subscription.unsubscribe()
-        const hash = window.location.hash
-        if (hash.includes('type=invite')) {
-          router.replace('/set-password')
-        } else {
-          router.replace('/app/home')
-        }
-      }
-    })
+    async function handleCallback() {
+      const { data: { session }, error } = await supabase.auth.getSession()
 
-    return () => subscription.unsubscribe()
+      if (error || !session) {
+        router.replace('/login?error=auth_callback_failed')
+        return
+      }
+
+      const hash = window.location.hash
+      if (hash.includes('type=invite')) {
+        router.replace('/set-password')
+      } else {
+        router.replace('/app/home')
+      }
+    }
+
+    setTimeout(handleCallback, 500)
   }, [router])
 
   return (
