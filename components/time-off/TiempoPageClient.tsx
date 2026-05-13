@@ -81,7 +81,7 @@ export default function TiempoPageClient({ balance, requests, holidays, types }:
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl">
+    <div className="flex flex-col gap-6 max-w-5xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

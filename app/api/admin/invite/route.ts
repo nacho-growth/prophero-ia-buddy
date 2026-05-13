@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthContext } from '@/lib/supabase/auth-context'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isTimeOffEnabled } from '@/lib/skills/time-off'
 
 const schema = z.object({
   email: z.string().email(),
@@ -106,6 +107,29 @@ export async function POST(request: NextRequest) {
         .from('users')
         .update({ onboarding_status: 'in_progress' })
         .eq('id', authUser.user.id)
+    }
+  }
+
+  const timeOffActive = await isTimeOffEnabled(auth.tenantId)
+  if (timeOffActive) {
+    const { data: defaultPolicy } = await admin
+      .from('time_off_policies')
+      .select('id, days_per_year')
+      .eq('tenant_id', auth.tenantId)
+      .eq('is_default', true)
+      .maybeSingle()
+
+    if (defaultPolicy) {
+      await admin.from('time_off_balances').insert({
+        user_id:      authUser.user.id,
+        tenant_id:    auth.tenantId,
+        policy_id:    defaultPolicy.id,
+        year:         new Date().getFullYear(),
+        days_total:   defaultPolicy.days_per_year,
+        days_used:    0,
+        days_pending: 0,
+      })
+      console.log('INVITE - time off balance created:', defaultPolicy.days_per_year, 'days')
     }
   }
 

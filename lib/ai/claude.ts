@@ -75,6 +75,27 @@ export async function callClaude(input: CallClaudeInput): Promise<Result<CallCla
         - (timeOffBalance.days_pending as number)
       timeOffContext = `Días de vacaciones disponibles ${new Date().getFullYear()}: ${daysAvailable} de ${timeOffBalance.days_total}`
     }
+
+    const { data: teamTimeOff } = await supabase
+      .from('time_off_requests')
+      .select('start_date, end_date, days_count, users!inner(full_name, role)')
+      .eq('tenant_id', tenantId)
+      .eq('status', 'approved')
+      .neq('user_id', userId)
+      .in('users.role', ['employee'])
+      .gte('end_date', new Date().toISOString().split('T')[0])
+      .order('start_date')
+      .limit(10)
+
+    if (teamTimeOff?.length) {
+      const teamTimeOffText = teamTimeOff
+        .map(r => {
+          const u = r.users as unknown as { full_name: string }
+          return `${u.full_name}: ${r.start_date} → ${r.end_date} (${r.days_count} días)`
+        })
+        .join('\n')
+      timeOffContext += `\nVacaciones aprobadas del equipo (próximas/actuales):\n${teamTimeOffText}`
+    }
   }
   console.log('PROFILE DEBUG - userId:', userId)
   console.log('PROFILE DEBUG - userRow:', JSON.stringify(userRow))
