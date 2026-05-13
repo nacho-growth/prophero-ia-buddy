@@ -8,9 +8,14 @@ export default function AuthCallbackPage() {
   const router = useRouter()
 
   useEffect(() => {
+    // Leer el hash ANTES de que Supabase lo procese y limpie la URL
+    const hash = window.location.hash
+    const isInvite = hash.includes('type=invite')
+
     const supabase = createClient()
 
     async function handleCallback() {
+      // getSession() procesa el hash y establece la sesión
       const { data: { session }, error } = await supabase.auth.getSession()
 
       if (error || !session) {
@@ -18,15 +23,10 @@ export default function AuthCallbackPage() {
         return
       }
 
-      const hash = window.location.hash
-      if (hash.includes('type=invite')) {
-        router.replace('/set-password')
-      } else {
-        router.replace('/app/home')
-      }
+      router.replace(isInvite ? '/set-password' : '/app/home')
     }
 
-    setTimeout(handleCallback, 500)
+    void handleCallback()
   }, [router])
 
   return (

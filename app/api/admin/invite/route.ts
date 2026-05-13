@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       team_id: teamId,
       tenant_id: auth.tenantId,
     },
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://prophero-ia-buddy.vercel.app'}/api/auth/callback?next=/set-password`,
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://prophero-ia-buddy.vercel.app'}/auth/callback`,
   })
 
   if (inviteError) {
