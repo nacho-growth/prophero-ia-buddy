@@ -64,7 +64,7 @@ export async function callClaude(input: CallClaudeInput): Promise<Result<CallCla
     const embedding = await getEmbedding(userMessage)
     console.log('KNOWLEDGE DEBUG - embedding generated, length:', embedding.length)
     const { data: chunks, error: chunksError } = await admin.rpc('match_knowledge_chunks_hybrid', {
-      query_embedding: `[${embedding.join(',')}]`,
+      query_embedding: `[${embedding.join(',')}]` as unknown as number[],
       query_text: userMessage,
       match_tenant_id: tenantId,
       match_count: 8,
