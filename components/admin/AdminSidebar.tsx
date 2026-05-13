@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Users, BookOpen, ClipboardList, BarChart2, Megaphone, Zap, Settings } from 'lucide-react'
+import { Users, BookOpen, ClipboardList, BarChart2, Megaphone, Zap, Settings, Umbrella } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { UserRole } from '@/lib/supabase/types'
 
@@ -29,11 +29,19 @@ const NAV_ITEMS = [
 
 interface AdminSidebarProps {
   role: UserRole
+  timeOffEnabled?: boolean
 }
 
-export default function AdminSidebar({ role }: AdminSidebarProps) {
+export default function AdminSidebar({ role, timeOffEnabled = false }: AdminSidebarProps) {
   const pathname = usePathname()
-  const visibleItems = NAV_ITEMS.filter(({ minRole }) => canAccess(role, minRole))
+  const allItems = timeOffEnabled
+    ? [
+        ...NAV_ITEMS.slice(0, 1), // Personas
+        { href: '/admin/time-off', icon: Umbrella, label: 'Time Off', minRole: 'manager' as UserRole },
+        ...NAV_ITEMS.slice(1),
+      ]
+    : NAV_ITEMS
+  const visibleItems = allItems.filter(({ minRole }) => canAccess(role, minRole))
 
   return (
     <nav

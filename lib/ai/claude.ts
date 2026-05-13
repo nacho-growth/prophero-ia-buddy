@@ -53,6 +53,29 @@ export async function callClaude(input: CallClaudeInput): Promise<Result<CallCla
     supabase.from('users').select('full_name, job_title').eq('id', userId).eq('tenant_id', tenantId).single(),
     supabase.from('employee_profiles').select('onboarding_day, xp_total, current_level, last_sentiment').eq('user_id', userId).eq('tenant_id', tenantId).single(),
   ])
+
+  // Step 2b: Load time-off balance if skill is enabled
+  const hasTimeOff = (skills as Array<{ skills: { slug: string } | null }> | null)?.some(
+    ts => (ts.skills as { slug: string } | null)?.slug === 'time_off'
+  ) ?? false
+
+  let timeOffContext = ''
+  if (hasTimeOff) {
+    const { data: timeOffBalance } = await admin
+      .from('time_off_balances')
+      .select('days_total, days_used, days_pending')
+      .eq('user_id', userId)
+      .eq('tenant_id', tenantId)
+      .eq('year', new Date().getFullYear())
+      .maybeSingle()
+
+    if (timeOffBalance) {
+      const daysAvailable = (timeOffBalance.days_total as number)
+        - (timeOffBalance.days_used as number)
+        - (timeOffBalance.days_pending as number)
+      timeOffContext = `Días de vacaciones disponibles ${new Date().getFullYear()}: ${daysAvailable} de ${timeOffBalance.days_total}`
+    }
+  }
   console.log('PROFILE DEBUG - userId:', userId)
   console.log('PROFILE DEBUG - userRow:', JSON.stringify(userRow))
   console.log('PROFILE DEBUG - empProfile:', JSON.stringify(empProfile))
@@ -116,7 +139,7 @@ export async function callClaude(input: CallClaudeInput): Promise<Result<CallCla
   const systemPrompt = [
     agentPersona ?? `Eres ${agentName}, el asistente de onboarding de ${tenantName}. Tu rol es ayudar a los nuevos empleados a integrarse con éxito en su primer mes.`,
     skillsSection,
-    `\n## Empleado\nNombre: ${typedUser?.full_name ?? 'empleado'}\nCargo: ${typedUser?.job_title ?? 'no especificado'}\nDía de onboarding: ${typedEmpProfile?.onboarding_day ?? 1}\nNivel: ${typedEmpProfile?.current_level ?? 'junior'}`,
+    `\n## Empleado\nNombre: ${typedUser?.full_name ?? 'empleado'}\nCargo: ${typedUser?.job_title ?? 'no especificado'}\nDía de onboarding: ${typedEmpProfile?.onboarding_day ?? 1}\nNivel: ${typedEmpProfile?.current_level ?? 'junior'}${timeOffContext ? `\n${timeOffContext}` : ''}`,
     knowledgeContext ? `\n## Conocimiento relevante\n${knowledgeContext}` : '',
     `\n## Instrucciones\n- Responde siempre en español\n- Sé conciso, amable y motivador\n- Si no tienes información suficiente para responder, indícalo claramente`,
   ].filter(Boolean).join('\n')

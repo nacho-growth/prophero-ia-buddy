@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AdminShell from '@/components/admin/AdminShell'
+import { isTimeOffEnabled } from '@/lib/skills/time-off'
 import type { UserProfile, UserRole } from '@/lib/supabase/types'
 
 const ADMIN_ROLES: UserRole[] = ['manager', 'hr_admin', 'tenant_admin', 'super_admin']
@@ -21,12 +22,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/app/home')
   }
 
-  const { count: unreadCount } = await supabase
-    .from('notifications')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('tenant_id', profile.tenant_id)
-    .eq('is_read', false)
+  const [{ count: unreadCount }, timeOffEnabled] = await Promise.all([
+    supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('tenant_id', profile.tenant_id)
+      .eq('is_read', false),
+    isTimeOffEnabled(profile.tenant_id as string),
+  ])
 
   const userProfile: UserProfile = {
     id: profile.id,
@@ -43,7 +47,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <AdminShell user={userProfile} unreadCount={unreadCount ?? 0}>
+    <AdminShell user={userProfile} unreadCount={unreadCount ?? 0} timeOffEnabled={timeOffEnabled}>
       <main
         style={{
           marginTop: 'var(--header-height)',

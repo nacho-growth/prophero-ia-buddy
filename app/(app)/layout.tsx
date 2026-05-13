@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AppShell from '@/components/app/AppShell'
+import { isTimeOffEnabled } from '@/lib/skills/time-off'
 import type { UserProfile } from '@/lib/supabase/types'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -17,13 +18,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (!profile) redirect('/login')
 
-  const { count: unreadCount } = await supabase
-    .from('notifications')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('tenant_id', profile.tenant_id)
-    .eq('is_read', false)
-    .then((r) => ({ count: r.count ?? 0 }))
+  const [{ count: unreadCount }, timeOffEnabled] = await Promise.all([
+    supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('tenant_id', profile.tenant_id)
+      .eq('is_read', false)
+      .then((r) => ({ count: r.count ?? 0 })),
+    isTimeOffEnabled(profile.tenant_id as string),
+  ])
 
   const userProfile: UserProfile = {
     id: profile.id,
@@ -40,7 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <AppShell user={userProfile} unreadCount={unreadCount ?? 0}>
+    <AppShell user={userProfile} unreadCount={unreadCount ?? 0} timeOffEnabled={timeOffEnabled}>
       <main
         style={{
           marginTop: 'var(--header-height)',
