@@ -23,7 +23,7 @@ export default function HomeWelcomeCard({ name, tenantName, jobTitle }: Props) {
       </div>
       <p className="text-base opacity-90 max-w-xl">
         {jobTitle ? `Como ${jobTitle}, estás comenzando` : 'Estás comenzando'} un gran camino.
-        Tu asistente IA está listo para ayudarte a integrarte desde el primer día.
+        Tu Buddy está listo para acompañarte desde el primer día.
       </p>
       <div className="flex flex-wrap gap-3 mt-2">
         <Link
@@ -34,7 +34,7 @@ export default function HomeWelcomeCard({ name, tenantName, jobTitle }: Props) {
           Hablar con IA Buddy
         </Link>
         <Link
-          href="/app/onboarding"
+          href="/app/journey"
           className="rounded-xl px-5 py-2.5 font-semibold text-sm border border-white/40 hover:bg-white/10 transition-colors"
           style={{ color: '#fff' }}
         >

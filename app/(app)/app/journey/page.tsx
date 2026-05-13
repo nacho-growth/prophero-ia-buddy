@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { MessageCircle, BookOpen } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { completeStep } from '@/app/actions/onboarding'
 import JourneyPhase, { type PhaseData } from '@/components/journey/JourneyPhase'
@@ -76,6 +78,36 @@ export default async function JourneyPage() {
       estimatedMinutes: r.onboarding_steps!.estimated_minutes,
       content: r.onboarding_steps!.content ?? null,
     }))
+
+  if (allSteps.length === 0) {
+    return (
+      <div className="flex flex-col gap-6 max-w-6xl">
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Mi camino</h1>
+        <div
+          className="rounded-xl p-6 flex flex-col gap-4"
+          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+        >
+          <div className="flex items-center gap-3">
+            <BookOpen size={20} style={{ color: 'var(--text-muted)' }} />
+            <p className="font-medium" style={{ color: 'var(--text-primary)' }}>
+              Plan de onboarding en preparación
+            </p>
+          </div>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+            Tu equipo aún no tiene un plan de onboarding configurado. Tu manager está preparando el contenido — mientras tanto, podés preguntarle a Buddy cualquier duda.
+          </p>
+          <Link
+            href="/app/chat"
+            className="self-start inline-flex items-center gap-2 text-sm font-medium rounded-xl px-4 py-2 hover:opacity-80 transition-opacity"
+            style={{ background: 'var(--accent)', color: '#fff' }}
+          >
+            <MessageCircle size={15} />
+            Preguntarle a Buddy
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   const totalSteps = allSteps.length
   const completedTotal = allSteps.filter(s => s.status === 'completed').length
