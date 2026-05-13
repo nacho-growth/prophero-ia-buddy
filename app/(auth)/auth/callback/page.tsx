@@ -8,19 +8,32 @@ export default function AuthCallbackPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Leer el hash ANTES de que Supabase lo procese y limpie la URL
     const hash = window.location.hash
-    const isInvite = hash.includes('type=invite')
+    const params = new URLSearchParams(hash.slice(1))
+    const accessToken  = params.get('access_token')
+    const refreshToken = params.get('refresh_token')
+    const isInvite     = params.get('type') === 'invite'
 
     const supabase = createClient()
 
     async function handleCallback() {
-      // getSession() procesa el hash y establece la sesión
-      const { data: { session }, error } = await supabase.auth.getSession()
-
-      if (error || !session) {
-        router.replace('/login?error=auth_callback_failed')
-        return
+      if (accessToken && refreshToken) {
+        // @supabase/ssr no procesa el hash automáticamente — setSession manual
+        const { error } = await supabase.auth.setSession({
+          access_token:  accessToken,
+          refresh_token: refreshToken,
+        })
+        if (error) {
+          router.replace('/login?error=auth_callback_failed')
+          return
+        }
+      } else {
+        // Fallback para otros flows (magic link con code, OAuth, etc.)
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error || !session) {
+          router.replace('/login?error=auth_callback_failed')
+          return
+        }
       }
 
       router.replace(isInvite ? '/set-password' : '/app/home')
