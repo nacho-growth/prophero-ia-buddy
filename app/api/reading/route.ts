@@ -9,6 +9,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 const schema = z.object({
   stepId: z.string().uuid(),
   stepTitle: z.string(),
+  force: z.boolean().default(false),
 })
 
 async function getEmbedding(text: string): Promise<number[]> {
@@ -31,10 +32,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
 
-  const { stepId, stepTitle } = parsed.data
+  const { stepId, stepTitle, force } = parsed.data
   const admin = createAdminClient()
 
-  // Check DB cache first
+  // Check DB cache first (skip if force=true)
   const { data: step } = await admin
     .from('onboarding_steps')
     .select('content')
@@ -44,11 +45,11 @@ export async function POST(request: NextRequest) {
 
   const existingContent = step?.content as { generated_reading?: string; reading_status?: string } | null
 
-  if (existingContent?.generated_reading && existingContent?.reading_status === 'published') {
+  if (!force && existingContent?.generated_reading && existingContent?.reading_status === 'published') {
     console.log('READING DEBUG - serving from cache')
     return NextResponse.json({ content: existingContent.generated_reading, status: 'published', fromCache: true })
   }
-  if (existingContent?.generated_reading && existingContent?.reading_status === 'draft') {
+  if (!force && existingContent?.generated_reading && existingContent?.reading_status === 'draft') {
     console.log('READING DEBUG - content in draft, awaiting approval')
     return NextResponse.json({ content: null, status: 'draft' })
   }
