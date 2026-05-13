@@ -17,7 +17,12 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Bail immediately for auth routes — no Supabase calls, no possible redirect loop
-  if (pathname.startsWith('/login') || pathname.startsWith('/signup')) {
+  if (
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/signup') ||
+    pathname.startsWith('/auth/callback') ||
+    pathname.startsWith('/set-password')
+  ) {
     return NextResponse.next({ request })
   }
 
