@@ -134,7 +134,96 @@ export async function POST(request: NextRequest) {
     })
     const rawText = response.content[0].type === 'text' ? response.content[0].text : ''
     console.log('ASSESSMENT DEBUG - evaluate response preview:', rawText.substring(0, 300))
-    const data = JSON.parse(extractJson(rawText))
+    const data = JSON.parse(extractJson(rawText)) as {
+      results: Array<{ correct: boolean; feedback: string }>
+      score: number
+      passed: boolean
+      generalFeedback: string
+    }
+
+    const { stepId, stepTitle } = parsed.data
+
+    // Find or create assessment record for this step
+    console.log('ASSESSMENT DEBUG - looking up assessment for step:', stepId)
+    const { data: existingAssessment } = await admin
+      .from('assessments')
+      .select('id')
+      .eq('tenant_id', auth.tenantId)
+      .contains('trigger_config', { step_id: stepId })
+      .maybeSingle()
+
+    let assessmentId = existingAssessment?.id
+    console.log('ASSESSMENT DEBUG - existing assessment id:', assessmentId ?? 'none')
+
+    if (!assessmentId) {
+      const { data: newAssessment } = await admin
+        .from('assessments')
+        .insert({
+          tenant_id: auth.tenantId,
+          team_id: null,
+          title: `Assessment: ${stepTitle}`,
+          type: 'quiz',
+          trigger_type: 'onboarding_step',
+          trigger_config: { step_id: stepId },
+          xp_reward: 100,
+          passing_score: passingScore,
+        })
+        .select('id')
+        .single()
+      assessmentId = (newAssessment as { id: string } | null)?.id
+      console.log('ASSESSMENT DEBUG - created new assessment id:', assessmentId ?? 'failed')
+    }
+
+    if (assessmentId) {
+      const { error: attemptError } = await admin.from('user_assessments').insert({
+        user_id: auth.userId,
+        assessment_id: assessmentId,
+        tenant_id: auth.tenantId,
+        status: 'completed',
+        score: data.score,
+        passed: data.passed ?? false,
+        xp_earned: data.passed ? 100 : 0,
+        answers: questions.map((q, i) => ({
+          question: q.question,
+          answer: answers[i],
+          correct: data.results[i]?.correct ?? false,
+          ai_feedback: data.results[i]?.feedback ?? '',
+        })),
+        ai_overall_feedback: data.generalFeedback,
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+      })
+      console.log('ASSESSMENT DEBUG - saved to user_assessments, score:', data.score, 'passed:', data.passed, 'error:', attemptError)
+
+      if (data.passed) {
+        const { error: xpError } = await admin.from('xp_events').insert({
+          user_id: auth.userId,
+          tenant_id: auth.tenantId,
+          xp_amount: 100,
+          reason: 'assessment_completed',
+          reference_type: 'assessments',
+          reference_id: assessmentId,
+        })
+        console.log('ASSESSMENT DEBUG - xp_events insert error:', xpError)
+
+        const { data: ep } = await admin
+          .from('employee_profiles')
+          .select('xp_total')
+          .eq('user_id', auth.userId)
+          .eq('tenant_id', auth.tenantId)
+          .single()
+
+        if (ep) {
+          const { error: epError } = await admin
+            .from('employee_profiles')
+            .update({ xp_total: ((ep as { xp_total: number }).xp_total ?? 0) + 100 })
+            .eq('user_id', auth.userId)
+            .eq('tenant_id', auth.tenantId)
+          console.log('ASSESSMENT DEBUG - employee_profiles xp update error:', epError)
+        }
+      }
+    }
+
     return NextResponse.json(data)
   } catch (e) {
     console.error('ASSESSMENT DEBUG - evaluate error:', e)
