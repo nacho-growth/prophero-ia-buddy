@@ -103,10 +103,6 @@ export async function POST(request: NextRequest) {
           status: 'pending',
         }))
       )
-      await admin
-        .from('users')
-        .update({ onboarding_status: 'in_progress' })
-        .eq('id', authUser.user.id)
     }
   }
 

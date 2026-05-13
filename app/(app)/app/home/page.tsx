@@ -6,6 +6,7 @@ import HomeWelcomeCard from '@/components/home/HomeWelcomeCard'
 import HomeActiveOnboarding from '@/components/home/HomeActiveOnboarding'
 import HomeQuickActions from '@/components/home/HomeQuickActions'
 import HomeXPCard from '@/components/home/HomeXPCard'
+import StartOnboarding from '@/components/home/StartOnboarding'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -147,6 +148,7 @@ export default async function HomePage() {
   if (status === 'not_started' || !status) {
     return (
       <div className="flex flex-col gap-6">
+        <StartOnboarding />
         <HomeWelcomeCard
           name={profile.full_name as string}
           tenantName={tenantName}
