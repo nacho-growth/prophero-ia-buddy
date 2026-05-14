@@ -77,7 +77,7 @@ export default function SignupPage() {
           Acceso solo por invitación
         </h1>
         <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-          PropHero IA Buddy es una plataforma privada. Dejá tu email y un admin te contactará.
+          HeroHub IA es una plataforma privada. Dejá tu email y un admin te contactará.
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

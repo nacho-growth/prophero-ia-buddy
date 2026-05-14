@@ -14,7 +14,7 @@ const dmMono = DM_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'PropHero IA Buddy',
+  title: 'HeroHub IA',
   description: 'Tu asistente de onboarding inteligente',
 }
 

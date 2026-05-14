@@ -37,10 +37,10 @@ export default function Header({ user, unreadCount, world, onNotifOpen }: Header
       }}
     >
       <div className="flex items-center gap-2">
-        <img src="/buddy.png" style={{ width: 28, height: 28, borderRadius: 7 }} alt="PropHero Buddy" />
+        <img src="/buddy.png" style={{ width: 28, height: 28, borderRadius: 7 }} alt="HeroHub IA" />
         <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9375rem' }}>
-          PropHero{' '}
-          <span style={{ color: 'var(--accent)' }}>Buddy</span>
+          HeroHub{' '}
+          <span style={{ color: 'var(--accent)' }}>IA</span>
         </span>
         {world === 'admin' && (
           <span
