@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ArrowLeft, CheckCircle2, Circle, Trophy, Calendar } from 'lucide-react'
 import AssessmentCard from '@/components/admin/people/AssessmentCard'
+import ReportsToEditor from '@/components/admin/people/ReportsToEditor'
 
 const PHASE_CONFIGS = [
   { number: 1, name: 'Bienvenida',                   minDay: 1,  maxDay: 3  },
@@ -112,7 +113,7 @@ export default async function PersonDetailPage({ params }: { params: Promise<{ i
     admin
       .from('users')
       .select(`
-        id, full_name, email, job_title, role, onboarding_status, hire_date,
+        id, full_name, email, job_title, role, onboarding_status, hire_date, reports_to,
         teams!users_team_id_fkey(name),
         employee_profiles(xp_total, current_level, last_sentiment, onboarding_day,
                           strengths, growth_areas, notes_for_manager)
@@ -159,6 +160,7 @@ export default async function PersonDetailPage({ params }: { params: Promise<{ i
     role: string | null
     onboarding_status: string | null
     hire_date: string | null
+    reports_to: string | null
     teams: { name: string } | null
     employee_profiles: {
       xp_total: number | null
@@ -242,6 +244,9 @@ export default async function PersonDetailPage({ params }: { params: Promise<{ i
           {emp.email && (
             <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{emp.email}</p>
           )}
+          <div className="mt-2">
+            <ReportsToEditor employeeId={emp.id} currentReportsToId={emp.reports_to} />
+          </div>
         </div>
         {ep?.xp_total != null && (
           <div className="flex items-center gap-2 flex-shrink-0">

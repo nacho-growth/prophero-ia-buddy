@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react'
 import { X, Loader2, UserPlus, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 interface Team { id: string; name: string }
+interface Manager { id: string; full_name: string; job_title: string | null; role: string }
+
+const ROLE_LABEL: Record<string, string> = {
+  manager: 'Manager', hr_admin: 'HR Admin', tenant_admin: 'Admin',
+}
 
 interface Props {
   teams: Team[]
@@ -18,9 +23,18 @@ export default function InviteModal({ teams, onClose, onSuccess, initialEmail }:
   const [teamId, setTeamId] = useState(teams[0]?.id ?? '')
   const [role, setRole] = useState('employee')
   const [jobTitle, setJobTitle] = useState('')
+  const [reportsTo, setReportsTo] = useState('')
+  const [managers, setManagers] = useState<Manager[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/admin/users')
+      .then(r => r.json())
+      .then((d: { users: Manager[] }) => setManagers(d.users ?? []))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -38,7 +52,7 @@ export default function InviteModal({ teams, onClose, onSuccess, initialEmail }:
       const res = await fetch('/api/admin/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, fullName, teamId, role, jobTitle: jobTitle || undefined, requestEmail: initialEmail || undefined }),
+        body: JSON.stringify({ email, fullName, teamId, role, jobTitle: jobTitle || undefined, reportsTo: reportsTo || undefined, requestEmail: initialEmail || undefined }),
       })
       const data = await res.json() as { error?: string }
       if (!res.ok) {
@@ -176,6 +190,23 @@ export default function InviteModal({ teams, onClose, onSuccess, initialEmail }:
                     className="rounded-lg px-3 py-2 text-sm focus:outline-none"
                     style={inputStyle}
                   />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Reporta a (opcional)</label>
+                  <select
+                    value={reportsTo}
+                    onChange={e => setReportsTo(e.target.value)}
+                    className="rounded-lg px-3 py-2 text-sm focus:outline-none cursor-pointer"
+                    style={inputStyle}
+                  >
+                    <option value="">Sin asignar (aprueba tenant admin)</option>
+                    {managers.map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.full_name}{m.job_title ? ` — ${m.job_title}` : ''} ({ROLE_LABEL[m.role] ?? m.role})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
   const { data: profile } = await admin
     .from('users')
-    .select('tenant_id, team_id')
+    .select('tenant_id, team_id, reports_to')
     .eq('id', user.id)
     .single()
   if (!profile) return NextResponse.json({ error: 'Perfil no encontrado' }, { status: 404 })
@@ -87,18 +87,33 @@ export async function POST(request: Request) {
     }
   }
 
+  // Resolve approver: use reports_to if set, else fallback to first tenant_admin
+  let approverId = (profile.reports_to as string | null) ?? null
+  if (!approverId) {
+    const { data: fallback } = await admin
+      .from('users')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('role', 'tenant_admin')
+      .is('deleted_at', null)
+      .limit(1)
+      .maybeSingle()
+    approverId = (fallback as { id: string } | null)?.id ?? null
+  }
+
   // Insert request
   const { data: newRequest, error: insertError } = await admin
     .from('time_off_requests')
     .insert({
-      user_id:    user.id,
-      tenant_id:  tenantId,
-      type_id:    typeId,
-      start_date: startDate,
-      end_date:   endDate,
-      days_count: daysCount,
-      reason:     reason ?? null,
-      status:     'pending',
+      user_id:     user.id,
+      tenant_id:   tenantId,
+      type_id:     typeId,
+      start_date:  startDate,
+      end_date:    endDate,
+      days_count:  daysCount,
+      reason:      reason ?? null,
+      status:      'pending',
+      approver_id: approverId,
     })
     .select('id')
     .single()
@@ -128,37 +143,25 @@ export async function POST(request: Request) {
     }
   }
 
-  // Notify manager(s) of the team
-  const teamId = profile.team_id as string | null
-  if (teamId) {
-    const { data: managers } = await admin
+  // Notify approver
+  if (approverId) {
+    const { data: userRow } = await admin
       .from('users')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('team_id', teamId)
-      .in('role', ['manager', 'hr_admin', 'tenant_admin'])
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
 
-    if (managers && managers.length > 0) {
-      const { data: userRow } = await admin
-        .from('users')
-        .select('full_name')
-        .eq('id', user.id)
-        .single()
-
-      const notifications = managers.map(m => ({
-        user_id:           m.id,
-        tenant_id:         tenantId,
-        title:             'Nueva solicitud de tiempo libre',
-        body:              `${userRow?.full_name ?? 'Un empleado'} solicitó ${daysCount} día${daysCount !== 1 ? 's' : ''} de ${typeRow.name} (${startDate} → ${endDate})`,
-        notification_type: 'time_off_request',
-        deep_link:         '/admin/time-off',
-        is_read:           false,
-      }))
-
-      await admin.from('notifications').insert(notifications)
-    }
+    await admin.from('notifications').insert({
+      user_id:           approverId,
+      tenant_id:         tenantId,
+      title:             'Nueva solicitud de tiempo libre',
+      body:              `${userRow?.full_name ?? 'Un empleado'} solicitó ${daysCount} día${daysCount !== 1 ? 's' : ''} de ${(typeRow as { name: string }).name} (${startDate} → ${endDate})`,
+      notification_type: 'time_off_request',
+      deep_link:         '/admin/time-off',
+      is_read:           false,
+    })
   }
 
-  console.log('TIME-OFF REQUEST - created:', newRequest?.id, 'days:', daysCount)
+  console.log('TIME-OFF REQUEST - created:', newRequest?.id, 'days:', daysCount, 'approver:', approverId)
   return NextResponse.json({ ok: true })
 }

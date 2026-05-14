@@ -21,12 +21,13 @@ export default async function AdminTimeOffPage({
 
   const { data: adminProfile } = await supabase
     .from('users')
-    .select('tenant_id')
+    .select('tenant_id, role')
     .eq('id', user.id)
     .single()
   if (!adminProfile) redirect('/login')
 
   const tenantId = adminProfile.tenant_id as string
+  const adminRole = adminProfile.role as string
   const enabled = await isTimeOffEnabled(tenantId)
 
   if (!enabled) {
@@ -42,13 +43,21 @@ export default async function AdminTimeOffPage({
 
   const admin = createAdminClient()
 
+  const isSuperAdmin = ['tenant_admin', 'super_admin'].includes(adminRole)
+
+  const pendingQuery = admin
+    .from('time_off_requests')
+    .select('id, start_date, end_date, days_count, reason, created_at, users(full_name, email, team_id), time_off_types(name, color)')
+    .eq('tenant_id', tenantId)
+    .eq('status', 'pending')
+    .order('created_at')
+
+  if (!isSuperAdmin) {
+    pendingQuery.eq('approver_id', user.id)
+  }
+
   const [pendingResult, allResult, holidaysResult, policiesResult, typesResult] = await Promise.all([
-    admin
-      .from('time_off_requests')
-      .select('id, start_date, end_date, days_count, reason, created_at, users(full_name, email, team_id), time_off_types(name, color)')
-      .eq('tenant_id', tenantId)
-      .eq('status', 'pending')
-      .order('created_at'),
+    pendingQuery,
 
     admin
       .from('time_off_requests')

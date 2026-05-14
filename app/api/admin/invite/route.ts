@@ -10,6 +10,7 @@ const schema = z.object({
   teamId: z.string().min(1),
   role: z.enum(['employee', 'manager', 'hr_admin', 'tenant_admin']),
   jobTitle: z.string().max(100).optional(),
+  reportsTo: z.string().min(1).optional(),
   requestEmail: z.string().email().optional(),
 })
 
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { email, fullName, teamId, role, jobTitle } = parsed.data
+  const { email, fullName, teamId, role, jobTitle, reportsTo } = parsed.data
 
   const { data: team } = await admin
     .from('teams')
@@ -79,10 +80,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: inviteError.message }, { status: 400 })
   }
 
-  if (jobTitle) {
+  if (jobTitle || reportsTo) {
     await admin
       .from('users')
-      .update({ job_title: jobTitle, updated_at: new Date().toISOString() })
+      .update({
+        ...(jobTitle ? { job_title: jobTitle } : {}),
+        ...(reportsTo ? { reports_to: reportsTo } : {}),
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', authUser.user.id)
   }
 
