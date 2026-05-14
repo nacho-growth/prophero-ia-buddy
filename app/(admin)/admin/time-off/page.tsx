@@ -76,6 +76,8 @@ export default async function AdminTimeOffPage({
       .order('name'),
   ])
 
+  console.log('TIMEOFF DEBUG - tenantId:', tenantId, 'pending count:', pendingResult.data?.length, 'error:', pendingResult.error?.message)
+
   return (
     <AdminTimeOffClient
       tab={tab}
