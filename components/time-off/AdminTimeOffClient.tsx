@@ -83,6 +83,13 @@ function formatDateLong(d: string) {
   return new Date(d + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+function formatTimestamp(d: string | null): string {
+  if (!d) return '—'
+  const date = new Date(d)
+  if (isNaN(date.getTime())) return '—'
+  return date.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
 const TABS = [
   { key: 'pending',  label: 'Pendientes', icon: Clock },
   { key: 'history',  label: 'Historial',  icon: CheckCircle2 },
@@ -184,7 +191,7 @@ export default function AdminTimeOffClient({ tab, pending, history, holidays, po
                       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{req.reason}</p>
                     )}
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      Solicitado {formatDate(req.created_at)}
+                      Solicitado {formatTimestamp(req.created_at)}
                     </p>
                   </div>
                 </div>
@@ -283,7 +290,7 @@ export default function AdminTimeOffClient({ tab, pending, history, holidays, po
                           )}
                         </td>
                         <td className="px-4 py-3 text-xs whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
-                          {req.reviewed_at ? formatDate(req.reviewed_at) : '—'}
+                          {formatTimestamp(req.reviewed_at)}
                         </td>
                       </tr>
                     )
