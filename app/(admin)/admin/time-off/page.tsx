@@ -47,7 +47,7 @@ export default async function AdminTimeOffPage({
 
   const pendingQuery = admin
     .from('time_off_requests')
-    .select('id, start_date, end_date, days_count, reason, created_at, users(full_name, email, team_id), time_off_types(name, color)')
+    .select('id, start_date, end_date, days_count, reason, created_at, users!time_off_requests_user_id_fkey(full_name, email, team_id), time_off_types(name, color)')
     .eq('tenant_id', tenantId)
     .eq('status', 'pending')
     .order('created_at')
@@ -61,7 +61,7 @@ export default async function AdminTimeOffPage({
 
     admin
       .from('time_off_requests')
-      .select('id, start_date, end_date, days_count, status, review_comment, reviewed_at, created_at, users(full_name), time_off_types(name, color)')
+      .select('id, start_date, end_date, days_count, status, review_comment, reviewed_at, created_at, users!time_off_requests_user_id_fkey(full_name), time_off_types(name, color)')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
       .limit(50),
