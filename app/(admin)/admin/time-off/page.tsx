@@ -45,7 +45,7 @@ export default async function AdminTimeOffPage({
   const [pendingResult, allResult, holidaysResult, policiesResult, typesResult] = await Promise.all([
     admin
       .from('time_off_requests')
-      .select('id, start_date, end_date, days_count, reason, created_at, users!inner(full_name, email, teams!users_team_id_fkey(name)), time_off_types(name, color)')
+      .select('id, start_date, end_date, days_count, reason, created_at, users(full_name, email, team_id), time_off_types(name, color)')
       .eq('tenant_id', tenantId)
       .eq('status', 'pending')
       .order('created_at'),

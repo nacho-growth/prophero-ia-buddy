@@ -13,7 +13,7 @@ interface PendingRequest {
   days_count: number
   reason: string | null
   created_at: string
-  users: { full_name: string; email: string; teams: { name: string } | null } | null
+  users: { full_name: string; email: string; team_id: string | null } | null
   time_off_types: { name: string; color: string | null } | null
 }
 
@@ -164,15 +164,7 @@ export default function AdminTimeOffClient({ tab, pending, history, holidays, po
                       <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
                         {req.users?.full_name ?? req.users?.email ?? '—'}
                       </span>
-                      {req.users?.teams?.name && (
-                        <span
-                          className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}
-                        >
-                          {req.users.teams.name}
-                        </span>
-                      )}
-                    </div>
+                      </div>
                     <div className="flex items-center gap-2">
                       {req.time_off_types?.color && (
                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: req.time_off_types.color }} />
