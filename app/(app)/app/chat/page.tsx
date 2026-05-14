@@ -358,10 +358,10 @@ function MessageBubble({ message }: { message: Message }) {
 
 function WelcomeState({ agentName, onSuggest }: { agentName: string; onSuggest: (text: string) => void }) {
   const suggestions = [
-    '¿Cuáles son mis primeras tareas de onboarding?',
-    '¿Cómo funciona el proceso de revisión de código?',
-    '¿Dónde puedo encontrar la documentación del producto?',
-    '¿Quién es mi manager y cómo contactarlo?',
+    '¿Qué hacemos en PropHero?',
+    '¿Cuáles son los fees de PropHero?',
+    '¿Me explicás cómo es el procedimiento de Arras? ¿Cuándo se firma?',
+    '¿Cuáles son los pasos del proceso de compra?',
   ]
 
   return (
