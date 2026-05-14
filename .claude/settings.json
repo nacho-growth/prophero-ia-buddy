@@ -15,10 +15,12 @@
       "Bash([ -f \"/Users/ignacioolmedo/Documents/Work/PH/prophero-ia-buddy/$f\" ])",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(mkdir -p /Users/ignacioolmedo/Documents/Work/PH/prophero-ia-buddy/app/api/admin/people/\\\\[id\\\\]/reports-to)"
     ],
     "additionalDirectories": [
-      "/Users/ignacioolmedo/Documents/Work/PH/prophero-ia-buddy/app/(admin)/admin/people"
+      "/Users/ignacioolmedo/Documents/Work/PH/prophero-ia-buddy/app/(admin)/admin/people",
+      "/Users/ignacioolmedo/Documents/Work/PH/prophero-ia-buddy/app/api/admin/people/[id]"
     ]
   }
 }
