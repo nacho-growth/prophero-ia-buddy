@@ -60,6 +60,13 @@ function formatDate(d: string) {
   return new Date(d + 'T12:00:00').toLocaleDateString('es', { day: 'numeric', month: 'short' })
 }
 
+function formatTimestamp(d: string | null): string {
+  if (!d) return '—'
+  const date = new Date(d)
+  if (isNaN(date.getTime())) return '—'
+  return date.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
 function formatHolidayDate(d: string) {
   return new Date(d + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short' })
 }
@@ -238,7 +245,7 @@ export default function TiempoPageClient({ balance, requests, holidays, types }:
                         )}
                       </td>
                       <td className="px-4 py-3 text-xs whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
-                        {formatDate(req.created_at)}
+                        {formatTimestamp(req.created_at)}
                       </td>
                     </tr>
                   )
